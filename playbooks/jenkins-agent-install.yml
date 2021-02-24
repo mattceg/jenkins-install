@@ -1,0 +1,45 @@
+---
+- name: Create a Jenkins agent node
+  hosts: jenkins_agent
+  become: yes
+  become_user: root
+
+  pre_tasks:
+  - name: Install some packages
+    apt:
+      update_cache: yes
+      pkg:
+      - openjdk-8-jdk
+      - python3-pip
+      - python3-apt
+      - ansible
+
+  - name: Create /opt/jenkins directory
+    file:
+      path: /opt/jenkins
+      state: directory
+      owner: mattceg
+      group: mattceg
+      mode: 0755
+
+  roles:
+    - uchida.docker
+
+  tasks:
+  - name: Add ubuntu user to docker group
+    user:
+      name: mattceg
+      groups: docker
+      append: yes
+
+  - name: Disable host key checking in ansible
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      regexp: '^host_key_checking'
+      line: host_key_checking = False
+
+  - name: Add Jenkins roles path to ansible
+    lineinfile:
+      path: /etc/ansible/ansible.cfg
+      regexp: '^#roles_path'
+      line: roles_path= /etc/ansible/roles:/opt/jenkins/workspace/ansible-pipeline/roles
